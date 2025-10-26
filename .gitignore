@@ -11,5 +11,3 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Generated during npm install
-package-lock.json

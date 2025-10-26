@@ -66,7 +66,7 @@ const toneLabels: Record<BrandData["tone"], string> = {
 const layoutLabels: Record<BrandData["layout"], string> = {
   clair: "Clair et vide, tout simple",
   range: "Un peu rempli mais bien rangé",
-  vivant: "Plein d'images et de vie"
+  vivant: "Plein d’images et de vie"
 };
 
 const moodLabels: Record<VisualMood, string> = {
@@ -551,18 +551,18 @@ export default function Home() {
             <section>
               <h2 className="section-title">Ce que tu proposes</h2>
               <p className="step-intro">
-                Liste jusqu'à cinq offres. Une phrase simple et un prix si tu veux.
+                Liste jusqu’à cinq offres. Une phrase simple et un prix si tu veux.
               </p>
               <div className="multi-grid" style={{ gap: "1.75rem" }}>
                 {formData.services.map((service, index) => (
                   <div key={`service-${index}`} style={{ borderBottom: "1px solid #eef1fb", paddingBottom: "1.5rem" }}>
                     <div className="multi-grid two">
                       <div>
-                        <label htmlFor={`service-title-${index}`}>Nom de l'offre {index + 1}</label>
+                        <label htmlFor={`service-title-${index}`}>Nom de l’offre {index + 1}</label>
                         <input
                           id={`service-title-${index}`}
                           value={service.title}
-                          placeholder="Robe wax, jus d'ananas..."
+                          placeholder="Robe wax, jus d’ananas..."
                           onChange={(event) => updateService(index, "title", event.target.value)}
                         />
                       </div>
@@ -717,7 +717,7 @@ export default function Home() {
               </div>
 
               <div style={{ marginTop: "2rem" }}>
-                <label htmlFor="photos">Ajoute jusqu'à 5 photos de ton travail</label>
+                <label htmlFor="photos">Ajoute jusqu’à 5 photos de ton travail</label>
                 <input id="photos" type="file" accept="image/*" multiple onChange={handlePhotoChange} />
                 {isLoadingPhotos ? <p>Chargement des images...</p> : null}
                 {formData.visual.photos.length > 0 ? (
@@ -807,7 +807,7 @@ export default function Home() {
               </p>
               <div>
                 <p style={{ fontWeight: 500, marginBottom: "0.75rem" }}>
-                  Quand quelqu'un visite ton site, tu veux qu'il ressente quoi ? (3 mots)
+                  Quand quelqu’un visite ton site, tu veux qu’il ressente quoi ? (3 mots)
                 </p>
                 <div className="multi-grid two">
                   {formData.brand.feelings.map((feeling, index) => (
@@ -862,12 +862,12 @@ export default function Home() {
               </div>
 
               <div style={{ marginTop: "1.5rem" }}>
-                <label htmlFor="dislikes">Y a-t-il quelque chose que tu n'aimes pas du tout voir ?</label>
+                <label htmlFor="dislikes">Y a-t-il quelque chose que tu n’aimes pas du tout voir ?</label>
                 <textarea
                   id="dislikes"
                   rows={3}
                   value={formData.brand.dislikes}
-                  placeholder="Trop de couleurs, textes longs, photos d'inconnus..."
+                  placeholder="Trop de couleurs, textes longs, photos d’inconnus..."
                   onChange={(event) =>
                     setFormData((prev) => ({
                       ...prev,
