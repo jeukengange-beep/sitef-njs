@@ -160,8 +160,7 @@ export async function POST(request: Request) {
           }
         ],
         generationConfig: {
-          responseMimeType: "image/png",
-          aspectRatio: "3:2"
+          responseMimeType: "image/png"
         }
       })
     });
