@@ -10,3 +10,10 @@ npm run dev
 ```
 
 L'application sera disponible sur [http://localhost:3000](http://localhost:3000).
+
+## Configuration Gemini
+
+- Déclare une clé `GEMINI_API_KEY` dans `.env.local` et sur Vercel.
+- Par défaut, l'API appelle le modèle `gemini-2.5-flash-image-preview` pour obtenir une image PNG.
+- Si ton projet n'a pas accès à ce modèle, ajoute `GEMINI_IMAGE_MODEL` dans tes variables d'environnement (ex. `imagen-3.0-fast`).
+- En cas d'erreur de quota ou d'accès, vérifie la facturation, les autorisations du modèle dans [Google AI Studio](https://aistudio.google.com/) et consulte le [tableau d'usage](https://ai.dev/usage?tab=rate-limit).

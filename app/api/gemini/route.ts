@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const GEMINI_MODEL_ID = "gemini-2.5-flash-image-preview";
+const GEMINI_MODEL_ID =
+  process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-2.5-flash-image-preview";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_ID}:generateContent`;
 const GEMINI_TIMEOUT_MS = 60_000;
 
@@ -166,10 +167,35 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => null);
-      const errorMessage =
-        (errorPayload as { error?: { message?: string } })?.error?.message ||
-        "La génération d'image a échoué du côté de Gemini.";
-      return NextResponse.json({ error: errorMessage }, { status: response.status });
+      const geminiMessage =
+        (errorPayload as { error?: { message?: string; status?: string } })?.error?.
+          message;
+
+      let friendlyMessage =
+        geminiMessage || "La génération d'image a échoué du côté de Gemini.";
+
+      if (geminiMessage?.toLowerCase().includes("quota")) {
+        friendlyMessage =
+          "Le quota Gemini semble bloquer la génération. Vérifie que ton projet a bien la facturation activée et que le modèle est autorisé dans la console AI Studio.";
+      }
+
+      if (response.status === 403 && !geminiMessage) {
+        friendlyMessage =
+          "Accès refusé par Gemini. Vérifie les autorisations de ton projet et la clé API.";
+      }
+
+      if (response.status === 404) {
+        friendlyMessage =
+          "Le modèle demandé est introuvable. Assure-toi que GEMINI_IMAGE_MODEL correspond à un modèle disponible pour ton compte.";
+      }
+
+      return NextResponse.json(
+        {
+          error: friendlyMessage,
+          details: geminiMessage ?? undefined
+        },
+        { status: response.status }
+      );
     }
 
     const json = (await response.json()) as Record<string, unknown>;

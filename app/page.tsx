@@ -520,6 +520,7 @@ export default function Home() {
         const payload = (await response.json()) as {
           imageUrl?: string;
           error?: string;
+          details?: string;
         };
 
         if (isCancelled) {
@@ -527,9 +528,10 @@ export default function Home() {
         }
 
         if (!response.ok) {
-          setGenerationError(
-            payload.error || "Impossible de générer l'image pour le moment."
-          );
+          const baseMessage =
+            payload.error || "Impossible de générer l'image pour le moment.";
+          const detailMessage = payload.details ? `\nDétail : ${payload.details}` : "";
+          setGenerationError(`${baseMessage}${detailMessage}`);
           setGeneratedImage(null);
           return;
         }
@@ -537,9 +539,10 @@ export default function Home() {
         if (payload.imageUrl) {
           setGeneratedImage(payload.imageUrl);
         } else {
-          setGenerationError(
-            payload.error || "Aucune image n'a été renvoyée par Gemini."
-          );
+          const baseMessage =
+            payload.error || "Aucune image n'a été renvoyée par Gemini.";
+          const detailMessage = payload.details ? `\nDétail : ${payload.details}` : "";
+          setGenerationError(`${baseMessage}${detailMessage}`);
           setGeneratedImage(null);
         }
       } catch (error) {
