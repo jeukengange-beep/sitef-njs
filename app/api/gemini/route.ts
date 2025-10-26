@@ -158,10 +158,7 @@ export async function POST(request: Request) {
           {
             parts: [{ text: prompt }]
           }
-        ],
-        generationConfig: {
-          responseMimeType: "image/png"
-        }
+        ]
       })
     });
 
