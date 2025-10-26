@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type ReasonKey = "vente" | "contact" | "montrer" | "autre";
 
@@ -46,6 +46,24 @@ type FormData = {
   visual: VisualData;
   contact: ContactData;
   brand: BrandData;
+};
+
+type GeminiPayload = {
+  name: string;
+  activity: string;
+  reasons: ReasonKey[];
+  otherReason: string;
+  services: ServiceItem[];
+  colors: string[];
+  mood: VisualMood;
+  moodCustom: string;
+  tone: BrandData["tone"];
+  feelings: [string, string, string];
+  layout: BrandData["layout"];
+  signature: string;
+  city: string;
+  hasLogo: boolean;
+  hasPhotos: boolean;
 };
 
 const reasonLabels: Record<ReasonKey, string> = {
@@ -289,6 +307,10 @@ export default function Home() {
   const [formData, setFormData] = useState<FormData>(initialForm);
   const [step, setStep] = useState(1);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [regenerateCount, setRegenerateCount] = useState(0);
 
   const currentServiceCount = formData.services.length;
 
@@ -323,6 +345,24 @@ export default function Home() {
 
     return true;
   }, [formData, step]);
+
+  const geminiPayload = useMemo<GeminiPayload>(() => ({
+    name: formData.step1.name,
+    activity: formData.step1.activity,
+    reasons: formData.step1.reasons,
+    otherReason: formData.step1.otherReason,
+    services: formData.services,
+    colors: formData.visual.colors,
+    mood: formData.visual.mood,
+    moodCustom: formData.visual.moodCustom,
+    tone: formData.brand.tone,
+    feelings: formData.brand.feelings,
+    layout: formData.brand.layout,
+    signature: formData.brand.signature,
+    city: formData.contact.city,
+    hasLogo: formData.visual.hasLogo === "oui",
+    hasPhotos: formData.visual.photos.length > 0
+  }), [formData]);
 
   const goNext = () => setStep((prev) => Math.min(prev + 1, 6));
   const goPrev = () => setStep((prev) => Math.max(prev - 1, 1));
@@ -452,6 +492,88 @@ export default function Home() {
         }
       };
     });
+  };
+
+  useEffect(() => {
+    if (step !== 6) {
+      return;
+    }
+
+    let isCancelled = false;
+    const controller = new AbortController();
+
+    const requestImage = async () => {
+      setIsGeneratingImage(true);
+      setGenerationError(null);
+      setGeneratedImage(null);
+
+      try {
+        const response = await fetch("/api/gemini", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(geminiPayload),
+          signal: controller.signal
+        });
+
+        const payload = (await response.json()) as {
+          imageUrl?: string;
+          error?: string;
+        };
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          setGenerationError(
+            payload.error || "Impossible de générer l'image pour le moment."
+          );
+          setGeneratedImage(null);
+          return;
+        }
+
+        if (payload.imageUrl) {
+          setGeneratedImage(payload.imageUrl);
+        } else {
+          setGenerationError(
+            payload.error || "Aucune image n'a été renvoyée par Gemini."
+          );
+          setGeneratedImage(null);
+        }
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        const message =
+          error instanceof Error && error.message
+            ? `Une erreur inattendue est survenue pendant la génération : ${error.message}`
+            : "Une erreur inattendue est survenue pendant la génération.";
+        setGenerationError(message);
+        setGeneratedImage(null);
+      } finally {
+        if (!isCancelled) {
+          setIsGeneratingImage(false);
+        }
+      }
+    };
+
+    requestImage();
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, [step, geminiPayload, regenerateCount]);
+
+  const handleRegenerateImage = () => {
+    setRegenerateCount((previous) => previous + 1);
   };
 
   return (
@@ -907,7 +1029,48 @@ export default function Home() {
               <p className="step-intro">
                 Tout ce que tu viens de partager est rassemblé ici. Tu peux revenir en arrière pour ajuster si besoin.
               </p>
-              <SitePreview data={formData} />
+              <div className="final-preview-grid">
+                <div className="generated-image-panel">
+                  <header>
+                    <div>
+                      <h3>Image générée</h3>
+                      <p>Gemini crée une vision en PNG de ton futur site.</p>
+                    </div>
+                  </header>
+                  <div className={`generated-image-frame${generatedImage ? " has-image" : ""}`}>
+                    {generatedImage ? (
+                      <img src={generatedImage} alt="Aperçu généré par Gemini" />
+                    ) : isGeneratingImage ? (
+                      <p className="generated-image-status">
+                        <strong>Génération en cours…</strong>
+                        Quelques secondes suffisent pour voir ton aperçu.
+                      </p>
+                    ) : generationError ? (
+                      <p className="generated-image-status">
+                        <strong>Impossible de créer l’image.</strong>
+                        {" "}
+                        {generationError}
+                      </p>
+                    ) : (
+                      <p className="generated-image-status">
+                        <strong>Prête à être générée.</strong>
+                        Clique sur « Regénérer l’image » si rien ne s’affiche.
+                      </p>
+                    )}
+                  </div>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={handleRegenerateImage}
+                      disabled={isGeneratingImage}
+                    >
+                      {isGeneratingImage ? "Patiente un instant…" : "Regénérer l’image"}
+                    </button>
+                  </div>
+                </div>
+                <SitePreview data={formData} />
+              </div>
             </section>
           ) : null}
 
